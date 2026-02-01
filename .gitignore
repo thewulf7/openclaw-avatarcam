@@ -1,0 +1,55 @@
+# Node
+node_modules/
+npm-debug.log
+yarn-error.log
+package-lock.json
+
+# Build outputs
+dist/
+build/
+
+# Electron
+out/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Test outputs
+output_test.mp4
+output_test.webm
+*.mp4
+*.webm
+
+# Logs
+*.log
+ffmpeg_error.log
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+venv/
+env/
+
+# macOS virtualcam build
+macos-virtualcam/*.o
+macos-virtualcam/*.dylib
+macos-virtualcam/test_reader
+
+# Windows virtualcam build
+windows-virtualcam/*.obj
+windows-virtualcam/*.exe
+windows-virtualcam/*.dll
+
+# Models (if auto-downloaded or user-specific)
+# models/*.vrm
+# models/*.vrma
