@@ -85,17 +85,16 @@ app.whenReady().then(() => {
     const avatarPath = avatarArgIdx !== -1 ? args[avatarArgIdx + 1] : null;
 
     let background = null;
-    if (bgArgIdx !== -1) {
+    if (bgArgIdx !== -1 && bgArgIdx + 1 < args.length) {
       const val = args[bgArgIdx + 1];
       // Since standalone_gen resolves paths, absolute path check is good, 
       // or just simple fs.existsSync which handles absolute paths fine.
-      if (fs.existsSync(val)) {
+      if (val && fs.existsSync(val)) {
         background = { path: val };
-      } else {
+      } else if (val) {
         background = { color: val };
       }
     }
-
     if (!audioPath || !outputPath) {
       console.error('[Main] Error: --audio and --output are required for generation.');
       app.quit();
