@@ -286,10 +286,8 @@ async function saveVideoFile(blob, outputPath) {
             
             console.log(`[Renderer] Converting to MP4: ${tempPath} -> ${outputPath}`);
             
-            // Use absolute path for macOS Homebrew or assume output from 'which' command
-            // A more robust solution would be to check for ffmpeg existence or ask user for path.
-            // For this environment, we know it is /opt/homebrew/bin/ffmpeg
-            const ffmpegPath = '/opt/homebrew/bin/ffmpeg'; 
+            // Use ffmpeg from PATH (works across Linux, macOS, Windows)
+            const ffmpegPath = 'ffmpeg'; 
             
             // Also try 'ffmpeg' fallback if absolute fails (e.g. on Windows or other Mac setups)
             // But for now, let's just prepend the directory to PATH or use full path.
