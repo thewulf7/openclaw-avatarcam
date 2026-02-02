@@ -30,6 +30,13 @@ const resolvedArgs = args.map((arg, idx) => {
     if (['--audio', '--output', '--avatar', '--bg-image'].includes(prev)) {
         return path.resolve(process.cwd(), arg);
     }
+    if (prev === '--background') {
+        const absPath = path.resolve(process.cwd(), arg);
+        if (fs.existsSync(absPath)) {
+            return absPath;
+        }
+        return arg;
+    }
     return arg;
 });
 

@@ -25,7 +25,7 @@ let isAudioInit = false;
 function proxyLog(level, args) {
     try {
         ipcRenderer.send('log-message', { level, message: args });
-    } catch(e) {}
+    } catch (e) { }
 }
 const originalIsAudioInit = false; // Just to avoid syntax error in diff
 
@@ -36,7 +36,7 @@ console.warn = (...args) => proxyLog('WARN', args);
 // --- Init Three.js ---
 function init() {
     scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x00FF00); // Chroma Key Green or specific color
+    scene.background = new THREE.Color(0xd0deec); //default bg
 
     camera = new THREE.PerspectiveCamera(30, SCENE_WIDTH / SCENE_HEIGHT, 0.1, 20.0);
     camera.position.set(0, 1.4, 1.5); // Approximate head shot position
@@ -50,7 +50,7 @@ function init() {
     const light = new THREE.DirectionalLight(0xffffff);
     light.position.set(1.0, 1.0, 1.0).normalize();
     scene.add(light);
-    
+
 
 
     // Connect WS
@@ -128,13 +128,13 @@ async function startStream(deviceId) {
 
         // Create Source
         const source = audioContext.createMediaStreamSource(stream);
-        
+
         // Connect Source -> Analyser
         source.connect(analyser);
-        
+
         // DO NOT connect to destination (speakers) to avoid feedback!
         // analyser.connect(audioContext.destination); 
-        
+
         console.log('Audio Stream Started & Analyzing');
 
         // Resume context if suspended
@@ -186,7 +186,7 @@ function loadVRMPromise(path) {
         // Looking at renderer.js, loadVRM is async loader.load(...)
         // Let's modify loadVRM signature first to accept callback? 
         // Or just rely on it being relatively fast? No, for video gen we need valid state.
-        
+
         // BETTER APPROACH: Just wait a bit or modify loadVRM.
         // Let's assume for this MVP we just call it and wait a safe delay, 
         // OR better: modify loadVRM to be async.
@@ -195,27 +195,27 @@ function loadVRMPromise(path) {
 
 function startVideoGeneration({ audio_data, output_path, avatar, background }) {
     console.log('[Renderer] Starting video generation...');
-    
+
     // 0. Setup Environment (Async)
     const setupPromise = new Promise((resolve) => {
         let setupTasks = [];
-        
+
         if (background) {
             setupTasks.push(new Promise(r => {
                 updateBackground(background);
                 setTimeout(r, 500); // Give it a moment to load texture
             }));
         }
-        
+
         if (avatar) {
             setupTasks.push(new Promise(r => {
                 loadVRM(avatar);
                 // Rough estimate for load time. Ideally we hook into loader events.
                 // For MVP: wait 2 seconds if avatar changed
-                setTimeout(r, 2000); 
+                setTimeout(r, 2000);
             }));
         }
-        
+
         Promise.all(setupTasks).then(resolve);
     });
 
@@ -230,39 +230,39 @@ function startVideoGeneration({ audio_data, output_path, avatar, background }) {
         for (let i = 0; i < len; i++) bytes[i] = binaryString.charCodeAt(i);
 
         audioContext.decodeAudioData(bytes.buffer, (audioBuffer) => {
-             // 2. Setup MediaRecorder
-             const canvas = renderer.domElement;
-             const stream = canvas.captureStream(30); 
-             
-             const dest = audioContext.createMediaStreamDestination();
-             const source = audioContext.createBufferSource();
-             source.buffer = audioBuffer;
-             source.connect(analyser);
-             source.connect(dest);
-             
-             const tracks = dest.stream.getAudioTracks();
-             if (tracks.length > 0) stream.addTrack(tracks[0]);
+            // 2. Setup MediaRecorder
+            const canvas = renderer.domElement;
+            const stream = canvas.captureStream(30);
 
-             recordedChunks = [];
-             mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm; codecs=vp9' });
-             
-             mediaRecorder.ondataavailable = (event) => {
-                 if (event.data.size > 0) recordedChunks.push(event.data);
-             };
+            const dest = audioContext.createMediaStreamDestination();
+            const source = audioContext.createBufferSource();
+            source.buffer = audioBuffer;
+            source.connect(analyser);
+            source.connect(dest);
 
-             mediaRecorder.onstop = () => {
-                 const blob = new Blob(recordedChunks, { type: 'video/webm' });
-                 saveVideoFile(blob, output_path);
-             };
+            const tracks = dest.stream.getAudioTracks();
+            if (tracks.length > 0) stream.addTrack(tracks[0]);
 
-             // 3. Start
-             mediaRecorder.start();
-             source.start(0);
-             
-             source.onended = () => {
-                 console.log('[Renderer] Audio finished. Stopping recorder.');
-                 mediaRecorder.stop();
-             };
+            recordedChunks = [];
+            mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm; codecs=vp9' });
+
+            mediaRecorder.ondataavailable = (event) => {
+                if (event.data.size > 0) recordedChunks.push(event.data);
+            };
+
+            mediaRecorder.onstop = () => {
+                const blob = new Blob(recordedChunks, { type: 'video/webm' });
+                saveVideoFile(blob, output_path);
+            };
+
+            // 3. Start
+            mediaRecorder.start();
+            source.start(0);
+
+            source.onended = () => {
+                console.log('[Renderer] Audio finished. Stopping recorder.');
+                mediaRecorder.stop();
+            };
 
         }, (err) => console.error('Error decoding audio:', err));
     });
@@ -273,43 +273,47 @@ const { exec } = require('child_process');
 async function saveVideoFile(blob, outputPath) {
     const arrayBuffer = await blob.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
-    
+
     // Determine if we need to convert to MP4
     if (outputPath.endsWith('.mp4')) {
         const tempPath = outputPath.replace('.mp4', '_temp.webm');
-        
+
         fs.writeFile(tempPath, buffer, (err) => {
             if (err) {
                 console.error('Failed to save temp video:', err);
                 return;
             }
-            
+
             console.log(`[Renderer] Converting to MP4: ${tempPath} -> ${outputPath}`);
-            
+
             // Use ffmpeg from PATH (works across Linux, macOS, Windows)
-            const ffmpegPath = 'ffmpeg'; 
-            
+            const ffmpegPath = 'ffmpeg';
+
             // Also try 'ffmpeg' fallback if absolute fails (e.g. on Windows or other Mac setups)
             // But for now, let's just prepend the directory to PATH or use full path.
             // A common trick is to source profile, but exec doesn't do that.
-            
-            // Add crop filter for square video (1280x720 -> 720x720 center crop)
-            // crop=w:h:x:y -> 720:720:280:0
-            const command = `${ffmpegPath} -y -i "${tempPath}" -vf "crop=720:720:280:0" -c:v libx264 -preset fast -crf 22 -c:a aac "${outputPath}"`;
-            
+
+            // Crop to square and resize to 384x384 for Telegram video notes
+            // Video notes require: square, max 640px, max 1 minute
+            // -t 60 limits to 60 seconds max (Telegram video note limit)
+            // fps=30 ensures constant frame rate (drops/dupes frames as needed)
+            // Telegram's sendVideoNote API applies circular mask automatically
+            const command = `${ffmpegPath} -y -i "${tempPath}" -t 60 -vf "crop=720:720:280:0,fps=30,scale=384:384" -c:v libx264 -preset fast -crf 18 -c:a aac "${outputPath}"`;
+            console.log('[Renderer] Using video note format: 384x384, 30fps, max 60s');
+
             exec(command, (error, stdout, stderr) => {
                 if (error) {
                     const msg = `[Renderer] FFmpeg Conversion Error: ${error.message}\nSTDERR: ${stderr}`;
                     console.error(msg);
                     console.warn(`[Renderer] Video left as WebM at: ${tempPath}`);
-                    
+
                     // Log to file for debugging
-                    fs.writeFile('ffmpeg_error.log', msg, () => {});
+                    fs.writeFile('ffmpeg_error.log', msg, () => { });
                     ipcRenderer.send('generation-done', { success: false });
                 } else {
                     console.log(`[Renderer] Conversion Success! Saved to: ${outputPath}`);
                     // Cleanup temp
-                    fs.unlink(tempPath, () => {});
+                    fs.unlink(tempPath, () => { });
                     ipcRenderer.send('generation-done', { success: true, path: outputPath });
                 }
             });
@@ -366,18 +370,18 @@ function updateLipSync() {
     if (!analyser || !currentVrm) return;
 
     analyser.getByteTimeDomainData(dataArray);
-    
+
     // RMS Volume calculation (Time Domain is 128 centered)
     let sumSquares = 0;
-    for(let i=0; i < dataArray.length; i++) {
+    for (let i = 0; i < dataArray.length; i++) {
         const normalized = (dataArray[i] - 128) / 128.0; // -1.0 to 1.0
         sumSquares += normalized * normalized;
     }
     const rms = Math.sqrt(sumSquares / dataArray.length);
-    
+
     // Sensitivity Multiplier (Tune as needed)
     // Speech RMS is often 0.1 - 0.5 range.
-    const sensitivity = 5.0; 
+    const sensitivity = 5.0;
     const openAmount = Math.min(1.0, rms * sensitivity);
 
     // Smooth transition could be added here, but for now direct mapping
@@ -417,7 +421,7 @@ function loadVRM(url) {
             currentVrm = vrm;
             scene.add(vrm.scene);
             console.log('VRM Loaded');
-            
+
             // Try Loading Default Animation
             loadDefaultAnimation();
         },
@@ -440,7 +444,7 @@ function loadDefaultAnimation() {
                 console.log('No .vrma animation found in models directory');
             }
         }
-    } catch(e) {
+    } catch (e) {
         console.error('Error loading default animation:', e);
     }
 }
@@ -460,21 +464,21 @@ function loadAnimation(url) {
         (gltf) => {
             const vrmAnimations = gltf.userData.vrmAnimations;
             if (vrmAnimations == null) {
-                 console.warn('VRMAnimation not found');
-                 return;
+                console.warn('VRMAnimation not found');
+                return;
             }
 
             const vrmAnimation = vrmAnimations[0]; // Take the first one
 
             if (currentVrm) {
-               // Create Clip
-               const clip = createVRMAnimationClip(vrmAnimation, currentVrm);
-               
-               // Create Mixer
-               currentMixer = new THREE.AnimationMixer(currentVrm.scene);
-               const action = currentMixer.clipAction(clip);
-               action.play();
-               console.log('Animation Loaded & Playing');
+                // Create Clip
+                const clip = createVRMAnimationClip(vrmAnimation, currentVrm);
+
+                // Create Mixer
+                currentMixer = new THREE.AnimationMixer(currentVrm.scene);
+                const action = currentMixer.clipAction(clip);
+                action.play();
+                console.log('Animation Loaded & Playing');
             } else {
                 console.warn('Cannot play animation: No VRM loaded');
             }
@@ -490,13 +494,13 @@ function triggerReaction(name) {
     // Simple expression trigger
     // Map names to VRM Expression Preset Names
     let presetName = null;
-    switch(name.toLowerCase()) {
+    switch (name.toLowerCase()) {
         case 'smile': presetName = 'happy'; break;
         case 'joy': presetName = 'happy'; break;
         case 'angry': presetName = 'angry'; break;
         case 'sorrow': presetName = 'sad'; break;
         case 'fun': presetName = 'relaxed'; break; // 'fun' not standard VRM 1.0, maybe 'relaxed' or custom
-        case 'surprised': presetName = 'surprised'; break; 
+        case 'surprised': presetName = 'surprised'; break;
     }
 
     if (presetName) {
@@ -516,21 +520,21 @@ function animate() {
     if (currentVrm) {
         currentVrm.update(delta);
     }
-    
+
     if (currentMixer) {
         currentMixer.update(delta);
     }
-    
+
     // Blink Logic (Simple random)
     if (currentVrm && Math.random() < 0.005) {
-            currentVrm.expressionManager.setValue('blink', 1.0);
-            setTimeout(() => currentVrm.expressionManager.setValue('blink', 0.0), 100);
+        currentVrm.expressionManager.setValue('blink', 1.0);
+        setTimeout(() => currentVrm.expressionManager.setValue('blink', 0.0), 100);
     }
 
     if (currentVrm) {
         updateLipSync();
     }
-    
+
     renderer.render(scene, camera);
     captureAndSendFrame();
 }
@@ -545,7 +549,7 @@ function captureAndSendFrame() {
     // Read pixels (RGBA)
     // Note: gl.readPixels returns flipped Y usually? Three.js Renderer preserves buffer?
     // We check preservingDrawingBuffer: true
-    
+
     // Reading straight from WebGL context
     gl.readPixels(0, 0, SCENE_WIDTH, SCENE_HEIGHT, gl.RGBA, gl.UNSIGNED_BYTE, pixelBuffer);
 
@@ -569,8 +573,8 @@ function ipcMainSend(buffer) {
     lastSent = now;
 
     // We copy buffer because the underlying ArrayBuffer might be detached or reused
-    ipcRenderer.send('frame-data', { 
-        buffer: buffer, 
+    ipcRenderer.send('frame-data', {
+        buffer: buffer,
         timestamp: now * 1000 // Microseconds for C++ if needed, or Millis
     });
 }
@@ -595,9 +599,9 @@ function loadDefaultAvatar() {
                 console.warn('No .vrm files found in models directory');
             }
         } else {
-             console.warn('Models directory not found:', modelsParams);
+            console.warn('Models directory not found:', modelsParams);
         }
-    } catch(e) {
+    } catch (e) {
         console.error('Error loading default avatar:', e);
     }
 }

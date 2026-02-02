@@ -9,8 +9,7 @@
 #   --audio <path>      Input audio file (required)
 #   --output <path>     Output video file (required)
 #   --avatar <path>     VRM avatar model (default: models/default.vrm)
-#   --bg-color <hex>    Background color (default: #00FF00)
-#   --bg-image <path>   Background image (overrides bg-color)
+#   --background <val>  Background image path or color hex/name (auto-detected)
 #   --help              Show this help
 #
 # Automatically uses xvfb on headless systems.

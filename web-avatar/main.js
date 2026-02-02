@@ -60,62 +60,69 @@ app.whenReady().then(() => {
   // Parse CLI Args
   const args = process.argv;
   const isHeadlessGen = args.includes('--generate-video');
-  
+
   initSharedMemory();
-  
+
   // Only start API server if NOT in headless gen mode (optional, but cleaner)
   // Actually, let's keep it running just in case, or disable it.
   if (!isHeadlessGen) {
-      startServer();
+    startServer();
   } else {
-      console.log('[Main] Running in Standalone Video Generation Mode');
+    console.log('[Main] Running in Standalone Video Generation Mode');
   }
 
   createWindow(isHeadlessGen);
 
   if (isHeadlessGen) {
-      // Parse gen args
-      const audioArgIdx = args.indexOf('--audio');
-      const outputArgIdx = args.indexOf('--output');
-      const avatarArgIdx = args.indexOf('--avatar');
-      const bgImageArgIdx = args.indexOf('--bg-image');
-      const bgColorArgIdx = args.indexOf('--bg-color');
+    // Parse gen args
+    const audioArgIdx = args.indexOf('--audio');
+    const outputArgIdx = args.indexOf('--output');
+    const avatarArgIdx = args.indexOf('--avatar');
+    const bgArgIdx = args.indexOf('--background');
 
-      const audioPath = audioArgIdx !== -1 ? args[audioArgIdx + 1] : null;
-      const outputPath = outputArgIdx !== -1 ? args[outputArgIdx + 1] : null;
-      const avatarPath = avatarArgIdx !== -1 ? args[avatarArgIdx + 1] : null;
-      
-      let background = null;
-      if (bgImageArgIdx !== -1) background = { path: args[bgImageArgIdx + 1] };
-      else if (bgColorArgIdx !== -1) background = { color: args[bgColorArgIdx + 1] };
+    const audioPath = audioArgIdx !== -1 ? args[audioArgIdx + 1] : null;
+    const outputPath = outputArgIdx !== -1 ? args[outputArgIdx + 1] : null;
+    const avatarPath = avatarArgIdx !== -1 ? args[avatarArgIdx + 1] : null;
 
-      if (!audioPath || !outputPath) {
-          console.error('[Main] Error: --audio and --output are required for generation.');
-          app.quit();
-          return;
+    let background = null;
+    if (bgArgIdx !== -1) {
+      const val = args[bgArgIdx + 1];
+      // Since standalone_gen resolves paths, absolute path check is good, 
+      // or just simple fs.existsSync which handles absolute paths fine.
+      if (fs.existsSync(val)) {
+        background = { path: val };
+      } else {
+        background = { color: val };
       }
+    }
 
-      // Read audio file
-      try {
-          const audioBuf = fs.readFileSync(audioPath);
-          const audioBase64 = audioBuf.toString('base64');
-          
-          mainWindow.webContents.once('did-finish-load', () => {
-             // Delay slightly to ensure renderer is fully ready (Three.js init)
-             setTimeout(() => {
-                 console.log(`[Main] Sending generation request for ${outputPath}`);
-                 mainWindow.webContents.send('generate-video-direct', {
-                     audio_data: audioBase64,
-                     output_path: path.resolve(outputPath),
-                     avatar: avatarPath ? path.resolve(avatarPath) : undefined,
-                     background
-                 });
-             }, 3000); // 3s wait for scene init
+    if (!audioPath || !outputPath) {
+      console.error('[Main] Error: --audio and --output are required for generation.');
+      app.quit();
+      return;
+    }
+
+    // Read audio file
+    try {
+      const audioBuf = fs.readFileSync(audioPath);
+      const audioBase64 = audioBuf.toString('base64');
+
+      mainWindow.webContents.once('did-finish-load', () => {
+        // Delay slightly to ensure renderer is fully ready (Three.js init)
+        setTimeout(() => {
+          console.log(`[Main] Sending generation request for ${outputPath}`);
+          mainWindow.webContents.send('generate-video-direct', {
+            audio_data: audioBase64,
+            output_path: path.resolve(outputPath),
+            avatar: avatarPath ? path.resolve(avatarPath) : undefined,
+            background
           });
-      } catch (e) {
-          console.error('[Main] Failed to read audio file:', e);
-          app.quit();
-      }
+        }, 3000); // 3s wait for scene init
+      });
+    } catch (e) {
+      console.error('[Main] Failed to read audio file:', e);
+      app.quit();
+    }
   }
 
   app.on("activate", () => {
@@ -124,12 +131,12 @@ app.whenReady().then(() => {
 });
 
 ipcMain.on("generation-done", (event, { success, path }) => {
-    if (success) {
-        console.log(`[Main] Generation Complete: ${path}`);
-    } else {
-        console.error(`[Main] Generation Failed`);
-    }
-    app.quit();
+  if (success) {
+    console.log(`[Main] Generation Complete: ${path}`);
+  } else {
+    console.error(`[Main] Generation Failed`);
+  }
+  app.quit();
 });
 
 app.on("window-all-closed", () => {
