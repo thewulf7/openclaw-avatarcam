@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+#
+# avatarcam - Generate video messages with lip-syncing VRM avatar
+#
+# Usage:
+#   avatarcam --audio input.wav --output output.mp4 [options]
+#
+# Options:
+#   --audio <path>      Input audio file (required)
+#   --output <path>     Output video file (required)
+#   --avatar <path>     VRM avatar model (default: models/default.vrm)
+#   --bg-color <hex>    Background color (default: #00FF00)
+#   --bg-image <path>   Background image (overrides bg-color)
+#   --help              Show this help
+#
+# Automatically uses xvfb on headless systems.
+
+set -e
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(dirname "$SCRIPT_DIR")"
+WEB_AVATAR_DIR="$REPO_ROOT/web-avatar"
+GENERATOR="$SCRIPT_DIR/standalone_gen.js"
+
+# Check dependencies
+if [ ! -f "$WEB_AVATAR_DIR/node_modules/.bin/electron" ]; then
+    echo "[avatarcam] Error: Electron not installed."
+    echo "[avatarcam] Run: cd $WEB_AVATAR_DIR && npm install"
+    exit 1
+fi
+
+# Check if we need xvfb
+USE_XVFB=false
+if [ -z "$DISPLAY" ]; then
+    if command -v xvfb-run &> /dev/null; then
+        USE_XVFB=true
+        echo "[avatarcam] No display detected, using xvfb"
+    else
+        echo "[avatarcam] Error: No display and xvfb-run not found."
+        echo "[avatarcam] Install with: apt-get install xvfb"
+        exit 1
+    fi
+fi
+
+# Build command
+if [ "$USE_XVFB" = true ]; then
+    exec xvfb-run -a --server-args="-screen 0 1280x720x24" node "$GENERATOR" "$@"
+else
+    exec node "$GENERATOR" "$@"
+fi
