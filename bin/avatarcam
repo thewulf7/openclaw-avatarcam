@@ -18,17 +18,16 @@ const path = require('path');
 const fs = require('fs');
 
 const ROOT_DIR = path.resolve(__dirname, '..');
-const WEB_AVATAR_DIR = path.join(ROOT_DIR, 'web-avatar');
-const GENERATOR = path.join(ROOT_DIR, 'tools', 'standalone_gen.js');
+const WEB_AVATAR_DIR = path.join(ROOT_DIR, 'src');
 
 // Check if electron is installed
 const isWindows = process.platform === 'win32';
 const electronBin = isWindows ? 'electron.cmd' : 'electron';
-const electronPath = path.join(WEB_AVATAR_DIR, 'node_modules', '.bin', electronBin);
+const electronPath = path.join(ROOT_DIR, 'node_modules', '.bin', electronBin);
 
 if (!fs.existsSync(electronPath)) {
     console.error('[avatarcam] Error: Electron not installed.');
-    console.error('[avatarcam] Run: cd ' + WEB_AVATAR_DIR + ' && npm install');
+    console.error('[avatarcam] Run: npm install');
     process.exit(1);
 }
 
@@ -56,20 +55,56 @@ if (needsXvfb && !hasXvfb()) {
 // Build command
 const args = process.argv.slice(2);
 
+if (args.includes('--help') || args.includes('-h')) {
+    console.log(`
+avatarcam CLI - Generate video messages with lip-syncing VRM avatar
+
+Usage:
+  avatarcam --audio input.wav --output output.mp4 [options]
+
+Options:
+  --audio <path>      Input audio file (required)
+  --output <path>     Output video file (required)
+  --avatar <path>     VRM avatar model (default: models/default.vrm)
+  --background <val>  Background color (hex) or image path
+  --help              Show this help
+`);
+    process.exit(0);
+}
+
+// Helper to resolve generic args to absolute paths if they look like paths
+const resolvedArgs = args.map((arg, idx) => {
+    const prev = args[idx - 1];
+    if (['--audio', '--output', '--avatar', '--bg-image'].includes(prev)) {
+        return path.resolve(process.cwd(), arg);
+    }
+    if (prev === '--background') {
+        const absPath = path.resolve(process.cwd(), arg);
+        if (fs.existsSync(absPath)) {
+            return absPath;
+        }
+        return arg;
+    }
+    return arg;
+});
+
+const appArgs = [path.join(WEB_AVATAR_DIR, 'main.js'), '--generate-video', ...resolvedArgs];
+
 let cmd, cmdArgs;
 if (needsXvfb) {
     console.log('[avatarcam] No display detected, using xvfb');
     cmd = 'xvfb-run';
-    cmdArgs = ['-a', '--server-args=-screen 0 1280x720x24', 'node', GENERATOR, ...args];
+    cmdArgs = ['-a', '--server-args=-screen 0 1280x720x24', electronPath, ...appArgs];
 } else {
-    cmd = 'node';
-    cmdArgs = [GENERATOR, ...args];
+    cmd = electronPath;
+    cmdArgs = appArgs;
 }
 
 const child = spawn(cmd, cmdArgs, {
     stdio: 'inherit',
     cwd: ROOT_DIR,
-    shell: isWindows  // Use shell on Windows for proper PATH resolution
+    shell: isWindows, // Use shell on Windows for proper PATH resolution
+    env: process.env
 });
 
 child.on('close', (code) => {

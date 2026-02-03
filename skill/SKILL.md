@@ -91,6 +91,9 @@ build-essential procps curl file git ca-certificates xvfb xauth libgbm1 libxss1 
 ## Usage
 
 ```bash
+# Show help
+avatarcam --help
+
 # With color background
 avatarcam --audio voice.mp3 --output video.mp4 --background "#00FF00"
 

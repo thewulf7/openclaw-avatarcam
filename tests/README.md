@@ -6,13 +6,13 @@ This directory contains scripts to verify the OpenClaw Avatar functionality.
 Verifies that the Avatar API correctly accepts WebSocket connections and relays messages (Reactions, Audio Chunks) to the renderer.
 
 ### Usage
-1.  Ensure the App is running: `npm start` (in `../web-avatar`).
+1.  Ensure the App is running: `npm start` (in `../src`).
 2.  Run the test:
     ```bash
-    cd ../web-avatar
+    cd ../src
     node ../tests/test_relay.js
     ```
-    *Note: We run from `web-avatar` to use its `ws` dependency without reinstalling.*
+    *Note: We run from `src` to use its `ws` dependency without reinstalling.*
 
 ### Expected Output
 -   "Connected to Avatar API"

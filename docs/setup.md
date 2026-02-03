@@ -9,9 +9,9 @@
 
 ## 2. Electron Avatar Renderer Setup
 
-1. Navigate to `web-avatar`:
+1. Navigate to `src`:
    ```bash
-   cd web-avatar
+   cd src
    npm install
    ```
 2. **Start the App**:

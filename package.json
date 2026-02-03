@@ -27,15 +27,14 @@
   },
   "files": [
     "bin/",
-    "web-avatar/",
+    "src/",
     "models/",
     "tools/",
     "skill/",
     "README.md"
   ],
   "scripts": {
-    "postinstall": "cd web-avatar && npm install",
-    "start": "cd web-avatar && npm start",
+    "start": "electron src",
     "test": "node tests/test_runner.js"
   },
   "engines": {
@@ -46,7 +45,17 @@
     "linux",
     "win32"
   ],
-  "dependencies": {},
+  "dependencies": {
+    "@pixiv/three-vrm": "^3.0.0",
+    "@pixiv/three-vrm-animation": "^3.4.5",
+    "body-parser": "^2.2.2",
+    "cors": "^2.8.6",
+    "express": "^5.2.1",
+    "three": "^0.160.0",
+    "ws": "^8.19.0",
+    "electron": "^28.0.0"
+  },
+  "devDependencies": {},
   "peerDependencies": {
     "electron": ">=28.0.0"
   }
