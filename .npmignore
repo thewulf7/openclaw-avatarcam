@@ -52,5 +52,5 @@ windows-virtualcam/*.exe
 windows-virtualcam/*.dll
 
 # Models (if auto-downloaded or user-specific)
-# models/*.vrm
-# models/*.vrma
+models/*.vrm
+models/*.vrma
