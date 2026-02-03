@@ -1,5 +1,5 @@
 {
-  "name": "openclaw-avatarcam",
+  "name": "@thewulf7/openclaw-avatarcam",
   "version": "1.0.0",
   "description": "Generate video messages with a lip-syncing VRM avatar for OpenClaw",
   "keywords": [

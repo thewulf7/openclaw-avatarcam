@@ -8,7 +8,7 @@ openclaw:
     install:
       - id: "npm"
         kind: "npm"
-        package: "openclaw-avatarcam"
+        package: "@thewulf7/openclaw-avatarcam"
         global: true
         bins: ["avatarcam"]
         label: "Install avatarcam (npm)"
@@ -43,7 +43,7 @@ Generate avatar video messages from text or audio. Outputs as Telegram video not
 ## Installation
 
 ```bash
-npm install -g openclaw-avatarcam
+npm install -g @thewulf7/openclaw-avatarcam
 ```
 
 ## Configuration
