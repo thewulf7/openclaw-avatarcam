@@ -1,39 +1,38 @@
 ---
 name: video-message
 description: Generate and send video messages with a lip-syncing VRM avatar. Use when user asks for video message, avatar video, video reply, or when TTS should be delivered as video instead of audio.
-openclaw:
-  emoji: "🎥"
-  requires:
-    bins: ["ffmpeg", "avatarcam"]
-    install:
-      - id: "npm"
-        kind: "npm"
-        package: "@thewulf7/openclaw-avatarcam"
-        global: true
-        bins: ["avatarcam"]
-        label: "Install avatarcam (npm)"
-      - id: "brew"
-        kind: "brew"
-        formula: "ffmpeg"
-        bins: ["ffmpeg"]
-        label: "Install ffmpeg (brew)"
-      - id: "apt"
-        kind: "apt"
-        packages: ["xvfb", "xauth"]
-        label: "Install headless X dependencies (Linux only)"
-  config:
-    avatar:
-      type: "string"
-      label: "Avatar Model"
-      description: "Path to VRM avatar file"
-      default: "default.vrm"
-      required: false
-    background:
-      type: "string"
-      label: "Background"
-      description: "Background color (hex) or image path"
-      default: "#00FF00"
-      required: false
+metadata:
+  {
+    "openclaw":
+      {
+        "emoji": "🎥",
+        "requires": { "bins": ["ffmpeg", "avatarcam"] },
+        "install":
+          [
+            {
+              "id": "npm",
+              "kind": "npm",
+              "package": "@thewulf7/openclaw-avatarcam",
+              "global": true,
+              "bins": ["avatarcam"],
+              "label": "Install avatarcam (npm)",
+            },
+            {
+              "id": "brew",
+              "kind": "brew",
+              "formula": "ffmpeg",
+              "bins": ["ffmpeg"],
+              "label": "Install ffmpeg (brew)",
+            },
+            {
+              "id": "apt",
+              "kind": "apt",
+              "packages": ["xvfb", "xauth"],
+              "label": "Install headless X dependencies (Linux only)",
+            },
+          ],
+      },
+  }
 ---
 
 # Video Message
@@ -43,31 +42,25 @@ Generate avatar video messages from text or audio. Outputs as Telegram video not
 ## Installation
 
 ```bash
-npm install -g @thewulf7/openclaw-avatarcam
+npm install -g openclaw-avatarcam
 ```
 
 ## Configuration
 
-Configure via **Gateway Dashboard** → Skills → video-message:
+Configure in `TOOLS.md`:
 
-| Setting | Type | Default | Description |
-|---------|------|---------|-------------|
-| `avatar` | string | `default.vrm` | VRM avatar file path |
-| `background` | string | `#00FF00` | Color (hex) or image path |
-
-Or in `openclaw.json`:
-```json
-{
-  "skills": {
-    "entries": {
-      "video-message": {
-        "avatar": "default.vrm",
-        "background": "#00FF00"
-      }
-    }
-  }
-}
+```markdown
+### Video Message (avatarcam)
+- avatar: default.vrm
+- background: #00FF00
 ```
+
+### Settings Reference
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `avatar` | `default.vrm` | VRM avatar file path |
+| `background` | `#00FF00` | Color (hex) or image path |
 
 ## Prerequisites
 
@@ -77,7 +70,7 @@ Or in `openclaw.json`:
 |----------|---------|
 | **macOS** | `brew install ffmpeg` |
 | **Linux** | `sudo apt-get install -y xvfb xauth ffmpeg` |
-| **Windows** | Install [ffmpeg](https://www.gyan.dev/ffmpeg/builds/) and add to PATH |
+| **Windows** | Install ffmpeg and add to PATH |
 | **Docker** | See Docker section below |
 
 > **Note:** macOS and Windows don't need xvfb — they have native display support.
@@ -91,9 +84,6 @@ build-essential procps curl file git ca-certificates xvfb xauth libgbm1 libxss1 
 ## Usage
 
 ```bash
-# Show help
-avatarcam --help
-
 # With color background
 avatarcam --audio voice.mp3 --output video.mp4 --background "#00FF00"
 
@@ -114,7 +104,7 @@ message action=send filePath=/tmp/video.mp4 asVideoNote=true
 
 ## Workflow
 
-1. **Read config** from skill settings (avatar, background)
+1. **Read config** from TOOLS.md (avatar, background)
 2. **Generate TTS** if given text: `tts text="..."` → audio path
 3. **Run avatarcam** with audio + settings → MP4 output
 4. **Send as video note** via `message action=send filePath=... asVideoNote=true`
@@ -156,17 +146,24 @@ NO_REPLY
 3. FFmpeg processes: crop → fps normalize → scale → encode
 4. Message tool sends via Telegram `sendVideoNote` API
 
+## Platform Support
+
+| Platform | Display | Notes |
+|----------|---------|-------|
+| macOS | Native Quartz | No extra deps |
+| Linux | xvfb (headless) | `apt install xvfb` |
+| Windows | Native | No extra deps |
+
 ## Headless Rendering
 
 Avatarcam auto-detects headless environments:
-- **Linux:** Uses `xvfb-run` when `$DISPLAY` is not set
-- **macOS:** Uses native Quartz display
-- **Windows:** Uses native display (no xvfb needed)
+- Uses `xvfb-run` when `$DISPLAY` is not set (Linux only)
+- macOS/Windows use native display
 - GPU stall warnings are safe to ignore
 - Generation time: ~1.5x realtime (20s audio ≈ 30s processing)
 
 ## Notes
 
-- Config is read from gateway `skills.entries.video-message`
+- Config is read from TOOLS.md
 - Clean up temp files after sending: `rm /tmp/video*.mp4`
 - For regular video (not circular), omit `asVideoNote=true`
