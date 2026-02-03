@@ -1,0 +1,77 @@
+#!/usr/bin/env node
+/**
+ * avatarcam CLI - Generate video messages with lip-syncing VRM avatar
+ * 
+ * Usage:
+ *   avatarcam --audio input.wav --output output.mp4 [options]
+ * 
+ * Options:
+ *   --audio <path>      Input audio file (required)
+ *   --output <path>     Output video file (required)
+ *   --avatar <path>     VRM avatar model (default: models/default.vrm)
+ *   --background <val>  Background color (hex) or image path
+ *   --help              Show this help
+ */
+
+const { spawn, execSync } = require('child_process');
+const path = require('path');
+const fs = require('fs');
+
+const ROOT_DIR = path.resolve(__dirname, '..');
+const WEB_AVATAR_DIR = path.join(ROOT_DIR, 'web-avatar');
+const GENERATOR = path.join(ROOT_DIR, 'tools', 'standalone_gen.js');
+
+// Check if electron is installed
+const isWindows = process.platform === 'win32';
+const electronBin = isWindows ? 'electron.cmd' : 'electron';
+const electronPath = path.join(WEB_AVATAR_DIR, 'node_modules', '.bin', electronBin);
+
+if (!fs.existsSync(electronPath)) {
+    console.error('[avatarcam] Error: Electron not installed.');
+    console.error('[avatarcam] Run: cd ' + WEB_AVATAR_DIR + ' && npm install');
+    process.exit(1);
+}
+
+// Check for display (Linux headless only)
+const hasDisplay = !!process.env.DISPLAY;
+const isMac = process.platform === 'darwin';
+const isLinux = process.platform === 'linux';
+const needsXvfb = isLinux && !hasDisplay;
+
+function hasXvfb() {
+    try {
+        execSync('which xvfb-run', { stdio: 'ignore' });
+        return true;
+    } catch {
+        return false;
+    }
+}
+
+if (needsXvfb && !hasXvfb()) {
+    console.error('[avatarcam] Error: No display and xvfb-run not found.');
+    console.error('[avatarcam] Install with: apt-get install xvfb');
+    process.exit(1);
+}
+
+// Build command
+const args = process.argv.slice(2);
+
+let cmd, cmdArgs;
+if (needsXvfb) {
+    console.log('[avatarcam] No display detected, using xvfb');
+    cmd = 'xvfb-run';
+    cmdArgs = ['-a', '--server-args=-screen 0 1280x720x24', 'node', GENERATOR, ...args];
+} else {
+    cmd = 'node';
+    cmdArgs = [GENERATOR, ...args];
+}
+
+const child = spawn(cmd, cmdArgs, {
+    stdio: 'inherit',
+    cwd: ROOT_DIR,
+    shell: isWindows  // Use shell on Windows for proper PATH resolution
+});
+
+child.on('close', (code) => {
+    process.exit(code || 0);
+});

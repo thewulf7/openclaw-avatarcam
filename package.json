@@ -1,0 +1,53 @@
+{
+  "name": "openclaw-avatarcam",
+  "version": "1.0.0",
+  "description": "Generate video messages with a lip-syncing VRM avatar for OpenClaw",
+  "keywords": [
+    "openclaw",
+    "avatar",
+    "vrm",
+    "lip-sync",
+    "video",
+    "telegram",
+    "video-note",
+    "electron"
+  ],
+  "author": "Evgeny Utkin <thewulf7@gmail.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/thewulf7/openclaw-avatarcam.git"
+  },
+  "homepage": "https://github.com/thewulf7/openclaw-avatarcam#readme",
+  "bugs": {
+    "url": "https://github.com/thewulf7/openclaw-avatarcam/issues"
+  },
+  "bin": {
+    "avatarcam": "./bin/avatarcam"
+  },
+  "files": [
+    "bin/",
+    "web-avatar/",
+    "models/",
+    "tools/",
+    "skill/",
+    "README.md"
+  ],
+  "scripts": {
+    "postinstall": "cd web-avatar && npm install",
+    "start": "cd web-avatar && npm start",
+    "test": "node tests/test_runner.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "os": [
+    "darwin",
+    "linux",
+    "win32"
+  ],
+  "dependencies": {},
+  "peerDependencies": {
+    "electron": ">=28.0.0"
+  }
+}
